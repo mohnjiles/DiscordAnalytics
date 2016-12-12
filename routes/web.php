@@ -13,3 +13,4 @@
 
 Route::get('/', 'AnalyticsController@getChannelStats');
 Route::get('/gamestats', 'AnalyticsController@getGameStats');
+Route::get('/voicechannels', 'AnalyticsController@getVoiceChannelStats');

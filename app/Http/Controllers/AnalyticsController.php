@@ -6,6 +6,7 @@ use App\ChannelStats;
 use App\EventAnalytics;
 use App\GameTime;
 use App\StoredGameData;
+use App\StoredVoiceData;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -37,9 +38,12 @@ class AnalyticsController extends Controller
         $gw2Seconds = $this->getSecondsForGame("Guild Wars 2");
 
 
+
         $overwatch = $this->getGameTimeForUsers("Overwatch");
         $ffxiv = $this->getGameTimeForUsers("FINAL FANTASY XIV", "FINAL FANTASY XIV - A Realm Reborn");
         $lmi = $this->getGameTimeForUsers("LogMeIn Rescue Technician Console");
+        $gw2 = $this->getGameTimeForUsers("Guild Wars 2");
+        $hots = $this->getGameTimeForUsers("Heroes of the Storm");
 
 
         $overwatchReadable = $this->getReadableTime($overwatchSeconds);
@@ -49,10 +53,28 @@ class AnalyticsController extends Controller
         $gw2Readable = $this->getReadableTime($gw2Seconds);
 
 
+
         return view('gamestats',
             compact('overwatchSeconds', 'ffxivSeconds', 'hearthstoneSeconds',
                 'overwatchReadable', 'ffxivReadable', 'hearthstoneReadable', 'overwatch', 'ffxiv',
-                'lmi', 'hotsSeconds', 'hotsReadable', 'gw2Readable', 'gw2Seconds'));
+                'lmi', 'hotsSeconds', 'hotsReadable', 'gw2Readable', 'gw2Seconds', 'gw2', 'hots'));
+    }
+
+    public function getVoiceChannelStats() {
+        $hafSeconds = $this->getSecondsForVoiceChannel("High Air Flow");
+        $generalSeconds = $this->getSecondsForVoiceChannel("General");
+        $ffxivSeconds = $this->getSecondsForVoiceChannel("FFXIV");
+        $afkSeconds = $this->getSecondsForVoiceChannel("AFK");
+
+
+        $hafReadable = $this->getReadableTime($hafSeconds);
+        $generalReadable = $this->getReadableTime($generalSeconds);
+        $ffxivReadable = $this->getReadableTime($ffxivSeconds);
+        $afkReadable = $this->getReadableTime($afkSeconds);
+
+        return view ('voicechannels', compact('hafSeconds', 'hafReadable', 'generalReadable',
+            'generalSeconds', 'ffxivReadable', 'ffxivSeconds', 'afkSeconds', 'afkReadable'));
+
     }
 
     private function getSecondsForGame($gameName, $secondaryGameName = null)
@@ -81,6 +103,7 @@ class AnalyticsController extends Controller
             if ($key == 0 || $presenceUpdate->value == null || $presenceUpdate->timestamp == $presenceUpdates[$key - 1]->timestamp) continue;
 
             $nextThing = EventAnalytics::where("name", $presenceUpdate->name)
+                ->where("event", "PRESENCE_UPDATE")
                 ->where(function ($q) use ($gameName) {
                     $q->whereNull("value")
                         ->orWhere("value", $gameName);
@@ -144,6 +167,7 @@ class AnalyticsController extends Controller
 
             $nextThing = EventAnalytics
                 ::where("name", $presenceUpdate->name)
+                ->where("event", "PRESENCE_UPDATE")
                 ->where(function ($q) use ($gameName) {
                     $q->whereNull("value")
                         ->orWhere("value", $gameName);
@@ -193,6 +217,107 @@ class AnalyticsController extends Controller
 
         return $gameTime;
     }
+
+    /** Voice Channel Functions */
+
+    private function getSecondsForVoiceChannel($channel)
+    {
+        $storedData = StoredVoiceData::where("channel", $channel)->where("username", "overall")->first();
+
+        if ($storedData != null && Carbon::parse($storedData->updated_at)->diffInHours(Carbon::now()) <= 2) {
+            return $storedData->seconds;
+        }
+
+        $gameSeconds = 0;
+
+        $presenceUpdates = EventAnalytics::where("event", "VOICE_CHANNEL_JOIN")->where('id', '>', 1276)->where("value", $channel)->get();
+
+
+        foreach ($presenceUpdates as $key => $presenceUpdate) {
+
+            if ($key == 0 || $presenceUpdate->value == null || $presenceUpdate->timestamp == $presenceUpdates[$key - 1]->timestamp) continue;
+
+            $nextThing = EventAnalytics::where("name", $presenceUpdate->name)
+                ->where("event", "VOICE_CHANNEL_LEAVE")
+                ->where("value", $channel)
+                ->where("id", ">", $presenceUpdate->id)
+                ->orderBy("id")->first();
+
+            if ($nextThing == null) continue;
+
+            $diff = Carbon::parse($nextThing->timestamp)->diffInSeconds(Carbon::parse($presenceUpdate->timestamp));
+            $gameSeconds += $diff;
+        }
+
+        if ($storedData != null) {
+            $storedData->seconds = $gameSeconds;
+            $storedData->save();
+        } else {
+            $sgd = new StoredVoiceData();
+            $sgd->channel = $channel;
+            $sgd->seconds = $gameSeconds;
+            $sgd->username = "overall";
+            $sgd->save();
+        }
+
+        return $gameSeconds;
+    }
+
+    private function getSecondsForUserVoiceChannel($username, $voiceChannel)
+    {
+        $storedData = StoredVoiceData::where("channel", $voiceChannel)->where("username", $username)->first();
+
+        if ($storedData != null && Carbon::parse($storedData->updated_at)->diffInHours(Carbon::now()) <= 2) {
+            return $storedData->seconds;
+        }
+
+        $gameSeconds = 0;
+
+
+        $voiceChannelJoins = EventAnalytics
+            ::where("event", "VOICE_CHANNEL_JOIN")
+            ->where('id', '>', 1276)
+            ->where("name", $username)
+            ->where("value", $voiceChannel)
+            ->get();
+
+
+        foreach ($voiceChannelJoins as $key => $channelJoin) {
+
+            if ($key == 0 || $channelJoin->value == null || $channelJoin->timestamp == $channelJoin[$key - 1]->timestamp) continue;
+
+            $nextThing = EventAnalytics
+                ::where("event", "VOICE_CHANNEL_LEAVE")
+                ->where("value", $channelJoin->value)
+                ->where("id", ">", $channelJoin->id)
+                ->where("name", $username)
+                ->orderBy("id")
+                ->first();
+
+            if ($nextThing == null) continue;
+
+            $diff = Carbon::parse($nextThing->timestamp)->diffInSeconds(Carbon::parse($channelJoin->timestamp));
+            $gameSeconds += $diff;
+
+        }
+
+        if ($storedData != null) {
+            $storedData->seconds = $gameSeconds;
+            $storedData->updated_at = Carbon::now();
+            $storedData->save();
+        } else {
+            $sgd = new StoredVoiceData();
+            $sgd->channel = $voiceChannel;
+            $sgd->seconds = $gameSeconds;
+            $sgd->username = $username;
+            $sgd->save();
+        }
+
+        return $gameSeconds;
+    }
+
+    /** End Voice Channel Functions */
+
 
     private function getReadableTime($seconds)
     {
