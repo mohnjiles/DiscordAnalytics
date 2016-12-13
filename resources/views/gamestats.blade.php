@@ -4,14 +4,7 @@
 
     <div class="row">
         <div class="col-xs-12 text-center">
-            <h1>Discord Analytics</h1>
-            <h6>Game Stats</h6>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-xs-12 text-center">
-            <h3><a href="../">Channel Stats</a> | Game Stats</h3>
+            <h1>Game Stats</h1>
         </div>
     </div>
 
@@ -53,6 +46,18 @@
             </div>
         </div>
     </div>
+
+    <script type="text/javascript">
+        $(function() {
+            if (window.location.href.indexOf("channelstats") !== -1) {
+                $("a[href='channelstats']").parent().addClass('active');
+            } else if (window.location.href.indexOf("voicechannels") !== -1) {
+                $("a[href='voicechannels']").parent().addClass('active');
+            } else if (window.location.href.indexOf("gamestats") !== -1) {
+                $("a[href='gamestats']").parent().addClass('active');
+            }
+        });
+    </script>
 
     <script type="text/javascript">
         setTimeout(function () {

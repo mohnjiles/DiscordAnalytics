@@ -4,13 +4,7 @@
 
     <div class="row">
         <div class="col-xs-12 text-center">
-            <h1>Discord Analytics</h1>
-            <h6>JT be creepin'</h6>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-xs-12 text-center">
-            <h3>Channel Stats | <a href="gamestats">Game Stats</a></h3>
+            <h1>Text Channel Stats</h1>
         </div>
     </div>
 
@@ -19,12 +13,6 @@
             <div id="mostposts">
                 {{-- google chart goes here --}}
             </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-xs-12 text-center">
-            <h1>Channel Stats</h1>
         </div>
     </div>
 
@@ -62,6 +50,17 @@
 
 
 
+    <script type="text/javascript">
+        $(function() {
+            if (window.location.href.indexOf("channelstats") !== -1) {
+                $("a[href='channelstats']").parent().addClass('active');
+            } else if (window.location.href.indexOf("voicechannels") !== -1) {
+                $("a[href='voicechannels']").parent().addClass('active');
+            } else if (window.location.href.indexOf("gamestats") !== -1) {
+                $("a[href='gamestats']").parent().addClass('active');
+            }
+        });
+    </script>
 
 
     <script type="text/javascript">

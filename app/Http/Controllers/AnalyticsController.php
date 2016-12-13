@@ -65,15 +65,23 @@ class AnalyticsController extends Controller
         $generalSeconds = $this->getSecondsForVoiceChannel("General");
         $ffxivSeconds = $this->getSecondsForVoiceChannel("FFXIV");
         $afkSeconds = $this->getSecondsForVoiceChannel("AFK");
+        $overwatchSeconds = $this->getSecondsForVoiceChannel("Overwatch");
+        $hotsSeconds = $this->getSecondsForVoiceChannel("HotS");
+        $westworldSeconds = $this->getSecondsForVoiceChannel("Westworld");
 
 
         $hafReadable = $this->getReadableTime($hafSeconds);
         $generalReadable = $this->getReadableTime($generalSeconds);
         $ffxivReadable = $this->getReadableTime($ffxivSeconds);
         $afkReadable = $this->getReadableTime($afkSeconds);
+        $overwatchReadable = $this->getReadableTime($overwatchSeconds);
+        $hotsReadable = $this->getReadableTime($hotsSeconds);
+        $westworldReadable = $this->getReadableTime($westworldSeconds);
 
         return view ('voicechannels', compact('hafSeconds', 'hafReadable', 'generalReadable',
-            'generalSeconds', 'ffxivReadable', 'ffxivSeconds', 'afkSeconds', 'afkReadable'));
+            'generalSeconds', 'ffxivReadable', 'ffxivSeconds', 'afkSeconds', 'afkReadable',
+            'westworldReadable', 'westworldSeconds', 'hotsSeconds', 'hotsReadable', 'overwatchSeconds',
+            'overwatchReadable'));
 
     }
 

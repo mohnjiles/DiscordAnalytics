@@ -11,6 +11,9 @@
 |
 */
 
-Route::get('/', 'AnalyticsController@getChannelStats');
+Route::get('/', function() {
+    return redirect()->to("/channelstats");
+});
 Route::get('/gamestats', 'AnalyticsController@getGameStats');
 Route::get('/voicechannels', 'AnalyticsController@getVoiceChannelStats');
+Route::get('/channelstats', 'AnalyticsController@getChannelStats');
